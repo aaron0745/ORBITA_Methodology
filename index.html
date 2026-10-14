@@ -1,0 +1,984 @@
+<!DOCTYPE html>
+<html lang="en" class="scroll-smooth">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ORBITA | AI-Enabled Smart Organ Transport System</title>
+    <meta name="description" content="AI-Enabled Smart Organ Transport System using ESP32, Multi-Sensor IoT Telemetry, and Transport Risk Index (TRI).">
+    
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        brand: {
+                            50: '#ecfeff',
+                            100: '#cffafe',
+                            200: '#a5f3fc',
+                            300: '#67e8f9',
+                            400: '#22d3ee',
+                            500: '#06b6d4',
+                            600: '#0891b2',
+                            700: '#0e7490',
+                            800: '#155e75',
+                            900: '#164e63',
+                        },
+                        danger: '#ef4444',
+                        warning: '#f59e0b',
+                        success: '#10b981'
+                    },
+                    fontFamily: {
+                        sans: ['Inter', 'system-ui', '-apple-system', 'Segoe UI', 'Roboto', 'sans-serif'],
+                        mono: ['JetBrains Mono', 'Fira Code', 'Courier New', 'monospace'],
+                    }
+                }
+            }
+        }
+    </script>
+
+    <!-- KaTeX for Beautiful Math -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/katex.min.css">
+    <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/katex.min.js"></script>
+    <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/contrib/auto-render.min.js"
+        onload="renderMathInElement(document.body, {delimiters: [{left: '$$', right: '$$', display: true}, {left: '$', right: '$', display: false}]});"></script>
+
+    <!-- Chart.js for Interactive Telemetry & TRI Simulator -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+    <style>
+        .glass {
+            background: rgba(15, 23, 42, 0.75);
+            backdrop-filter: blur(16px);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+        }
+        .glass-card {
+            background: rgba(30, 41, 59, 0.6);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(148, 163, 184, 0.1);
+        }
+        .glow-cyan {
+            box-shadow: 0 0 35px -5px rgba(6, 182, 212, 0.3);
+        }
+        pre code {
+            font-family: 'JetBrains Mono', monospace;
+        }
+    </style>
+</head>
+<body class="bg-slate-950 text-slate-100 antialiased selection:bg-cyan-500 selection:text-black">
+
+    <!-- Top Navigation Bar -->
+    <header class="sticky top-0 z-50 glass border-b border-slate-800">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
+            <div class="flex items-center space-x-3">
+                <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-cyan-600 to-teal-400 flex items-center justify-center text-slate-950 font-black text-xl shadow-lg shadow-cyan-500/20">
+                    O
+                </div>
+                <div>
+                    <span class="font-bold text-lg tracking-tight bg-gradient-to-r from-cyan-400 to-teal-300 bg-clip-text text-transparent">ORBITA</span>
+                    <span class="text-xs px-2 py-0.5 ml-1.5 rounded-full bg-cyan-950 text-cyan-400 border border-cyan-800/60 font-mono">v1.0 ESP32</span>
+                </div>
+            </div>
+            <nav class="hidden md:flex space-x-8 text-sm font-medium text-slate-300">
+                <a href="#abstract" class="hover:text-cyan-400 transition">Abstract</a>
+                <a href="#hardware" class="hover:text-cyan-400 transition">Hardware & BOM</a>
+                <a href="#dataset" class="hover:text-cyan-400 transition">Dataset Strategy</a>
+                <a href="#tri-equation" class="hover:text-cyan-400 transition">TRI Equation</a>
+                <a href="#simulator" class="hover:text-cyan-400 transition text-cyan-400 font-semibold">Live Simulator</a>
+            </nav>
+            <div class="flex items-center space-x-3">
+                <a href="https://github.com/aaron0745/ORBITA_Methodology" target="_blank" rel="noopener noreferrer"
+                   class="inline-flex items-center space-x-2 px-3.5 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-xs font-semibold text-slate-200 border border-slate-700 transition">
+                    <svg class="w-4 h-4 fill-current" viewBox="0 0 24 24"><path d="M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23.957-.266 1.983-.399 3.003-.404 1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576 4.765-1.589 8.199-6.086 8.199-11.386 0-6.627-5.373-12-12-12z"/></svg>
+                    <span>GitHub Repo</span>
+                </a>
+            </div>
+        </div>
+    </header>
+
+    <!-- Hero Section -->
+    <section class="relative overflow-hidden pt-20 pb-28 border-b border-slate-800">
+        <div class="absolute inset-0 bg-[radial-gradient(circle_at_top,_var(--tw-gradient-stops))] from-cyan-900/20 via-slate-950 to-slate-950"></div>
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10 text-center">
+            <div class="inline-flex items-center space-x-2 px-3 py-1 rounded-full bg-cyan-950/80 border border-cyan-800/60 text-cyan-400 text-xs font-semibold mb-6">
+                <span class="w-2 h-2 rounded-full bg-cyan-400 animate-ping"></span>
+                <span>Affordable Smart Healthcare IoT • Powered by ESP32</span>
+            </div>
+            <h1 class="text-4xl sm:text-6xl font-black tracking-tight text-white max-w-4xl mx-auto leading-tight">
+                AI-Enabled Smart <br class="hidden sm:block">
+                <span class="bg-gradient-to-r from-cyan-400 via-teal-300 to-sky-400 bg-clip-text text-transparent">Organ Transport System</span>
+            </h1>
+            <p class="mt-6 text-lg sm:text-xl text-slate-400 max-w-3xl mx-auto leading-relaxed">
+                A low-cost intelligent retrofit for conventional organ preservation boxes. Integrating real-time sensor fusion, active thermoelectric temperature regulation, and a predictive <strong class="text-cyan-300 font-semibold">Transport Risk Index (TRI)</strong>.
+            </p>
+            <div class="mt-8 flex flex-wrap justify-center gap-4">
+                <a href="#simulator" class="px-6 py-3 rounded-xl bg-gradient-to-r from-cyan-500 to-teal-500 hover:from-cyan-400 hover:to-teal-400 text-slate-950 font-bold text-sm shadow-lg shadow-cyan-500/25 transition">
+                    Try Live TRI Simulator
+                </a>
+                <a href="#tri-equation" class="px-6 py-3 rounded-xl bg-slate-900 hover:bg-slate-800 text-slate-200 border border-slate-700 font-semibold text-sm transition">
+                    Explore TRI Mathematical Model
+                </a>
+                <a href="#hardware" class="px-6 py-3 rounded-xl bg-slate-900 hover:bg-slate-800 text-slate-200 border border-slate-700 font-semibold text-sm transition">
+                    View Hardware BOM & Costs
+                </a>
+            </div>
+
+            <!-- Key Metrics Grid -->
+            <div class="mt-14 grid grid-cols-2 md:grid-cols-4 gap-4 max-w-4xl mx-auto">
+                <div class="glass-card p-4 rounded-xl text-center">
+                    <div class="text-2xl sm:text-3xl font-extrabold text-cyan-400 font-mono">2°C – 8°C</div>
+                    <div class="text-xs text-slate-400 mt-1 uppercase tracking-wider font-semibold">Cold Storage Target</div>
+                </div>
+                <div class="glass-card p-4 rounded-xl text-center">
+                    <div class="text-2xl sm:text-3xl font-extrabold text-teal-400 font-mono">&lt; ₹9,500</div>
+                    <div class="text-xs text-slate-400 mt-1 uppercase tracking-wider font-semibold">Total BOM Cost (~$100)</div>
+                </div>
+                <div class="glass-card p-4 rounded-xl text-center">
+                    <div class="text-2xl sm:text-3xl font-extrabold text-sky-400 font-mono">0 – 100</div>
+                    <div class="text-xs text-slate-400 mt-1 uppercase tracking-wider font-semibold">Predictive Risk Index</div>
+                </div>
+                <div class="glass-card p-4 rounded-xl text-center">
+                    <div class="text-2xl sm:text-3xl font-extrabold text-indigo-400 font-mono">4G / GPS</div>
+                    <div class="text-xs text-slate-400 mt-1 uppercase tracking-wider font-semibold">Continuous Telemetry</div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Abstract & Problem Statement -->
+    <section id="abstract" class="py-20 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div class="grid grid-cols-1 lg:grid-cols-12 gap-10 items-center">
+            <div class="lg:col-span-7 space-y-6">
+                <div class="text-xs font-bold text-cyan-400 uppercase tracking-widest">Project Overview & Motivation</div>
+                <h2 class="text-3xl font-extrabold text-white tracking-tight">
+                    Bridging the Gap Between Passive Coolers and High-Cost Perfusion Machines
+                </h2>
+                <div class="prose prose-invert text-slate-300 leading-relaxed space-y-4">
+                    <p>
+                        Organ transplantation is a time-critical process in which donated organs must be preserved under strict, controlled environmental conditions during transit between donor and recipient hospitals.
+                    </p>
+                    <p>
+                        In many regions, including India, organs are predominantly transported using conventional <strong>ice-filled hard cooler boxes</strong>. While economical, these passive boxes suffer from major limitations:
+                    </p>
+                    <ul class="list-disc pl-5 space-y-1 text-slate-400">
+                        <li><strong class="text-slate-200">Zero Real-Time Observability:</strong> Doctors have no visibility into internal temperatures or handling anomalies during transit.</li>
+                        <li><strong class="text-slate-200">No Automated Regulation:</strong> Melting ice leads to uncontrolled thermal warming ($>8^\circ\text{C}$) or direct frostbite damage ($<0^\circ\text{C}$).</li>
+                        <li><strong class="text-slate-200">Undetected Mechanical Trauma:</strong> Potholes, drops, and sudden acceleration induce shearing stress in cellular vasculature.</li>
+                        <li><strong class="text-slate-200">Cost Barrier of Existing Alternatives:</strong> Commercial hypothermic machine perfusion devices (e.g., TransMedics OCS, OrganOx) cost upwards of $40,000 to $80,000, rendering them unattainable for the vast majority of hospitals.</li>
+                    </ul>
+                </div>
+            </div>
+
+            <!-- Architecture Box Diagram -->
+            <div class="lg:col-span-5 glass-card p-6 rounded-2xl border border-slate-700/80 shadow-2xl">
+                <h3 class="text-lg font-bold text-white mb-4 flex items-center justify-between">
+                    <span>System Architecture</span>
+                    <span class="text-xs px-2.5 py-0.5 rounded bg-cyan-950 text-cyan-300 font-mono">ORBITA Retrofit</span>
+                </h3>
+                <div class="space-y-3 font-mono text-xs">
+                    <div class="p-3 rounded-lg bg-slate-900 border border-slate-700">
+                        <div class="text-cyan-400 font-semibold flex justify-between">
+                            <span>1. Sensor Layer</span>
+                            <span>I2C / OneWire / ADC</span>
+                        </div>
+                        <div class="text-slate-400 mt-1">Dual DS18B20 Probes, SHT31, MPU-6050 6-DOF, GPS Neo-8M, INA219, Reed Switch</div>
+                    </div>
+                    <div class="p-3 rounded-lg bg-slate-900 border border-cyan-800/40">
+                        <div class="text-teal-300 font-semibold flex justify-between">
+                            <span>2. Edge Processing & Regulation</span>
+                            <span>ESP32 Core</span>
+                        </div>
+                        <div class="text-slate-400 mt-1">Sensor fusion, local anomaly detection, PID/PWM thermal feedback, Peltier + Fans driver</div>
+                    </div>
+                    <div class="p-3 rounded-lg bg-slate-900 border border-slate-700">
+                        <div class="text-sky-400 font-semibold flex justify-between">
+                            <span>3. Connectivity & Telemetry</span>
+                            <span>UART / 4G LTE</span>
+                        </div>
+                        <div class="text-slate-400 mt-1">A7672S / SIM7600 module streaming MQTT packets to cloud broker with SSL encryption</div>
+                    </div>
+                    <div class="p-3 rounded-lg bg-slate-900 border border-purple-800/40">
+                        <div class="text-purple-300 font-semibold flex justify-between">
+                            <span>4. Cloud & AI Intelligence</span>
+                            <span>Predictive Engine</span>
+                        </div>
+                        <div class="text-slate-400 mt-1">Transport Risk Index (TRI) calculation, route ETA forecasting, automated hospital alerting</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Bill of Materials & Cost Breakdown -->
+    <section id="hardware" class="py-20 bg-slate-900/50 border-y border-slate-800">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="text-center max-w-3xl mx-auto mb-12">
+                <div class="text-xs font-bold text-cyan-400 uppercase tracking-widest">Hardware Architecture</div>
+                <h2 class="text-3xl font-extrabold text-white tracking-tight mt-1">
+                    Component Bill of Materials (BOM) & Budget
+                </h2>
+                <p class="text-slate-400 mt-3 text-sm sm:text-base">
+                    Every component has been selected for high availability, low power consumption, and medical-grade reliability under constrained budgets.
+                </p>
+            </div>
+
+            <div class="overflow-x-auto glass-card rounded-2xl border border-slate-800">
+                <table class="w-full text-left text-sm text-slate-300">
+                    <thead class="bg-slate-950/80 text-xs uppercase font-mono tracking-wider text-cyan-400 border-b border-slate-800">
+                        <tr>
+                            <th class="py-4 px-6">Subsystem</th>
+                            <th class="py-4 px-6">Component & Spec</th>
+                            <th class="py-4 px-6">Technical Purpose</th>
+                            <th class="py-4 px-6 text-right">Cost (INR ₹)</th>
+                            <th class="py-4 px-6 text-right">Cost (USD $)</th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-slate-800/60 font-sans">
+                        <tr class="hover:bg-slate-800/30 transition">
+                            <td class="py-4 px-6 font-semibold text-white">Compute Node</td>
+                            <td class="py-4 px-6 font-mono text-cyan-300 text-xs">ESP32 DevKit V1 (30-pin)</td>
+                            <td class="py-4 px-6 text-slate-400">Dual Xtensa cores, FreeRTOS tasks, local sensor aggregation & fail-safe logic</td>
+                            <td class="py-4 px-6 font-mono text-right text-slate-200">₹450</td>
+                            <td class="py-4 px-6 font-mono text-right text-slate-400">$5.50</td>
+                        </tr>
+                        <tr class="hover:bg-slate-800/30 transition">
+                            <td class="py-4 px-6 font-semibold text-white">Internal Temperature</td>
+                            <td class="py-4 px-6 font-mono text-cyan-300 text-xs">2x DS18B20 (Waterproof Stainless)</td>
+                            <td class="py-4 px-6 text-slate-400">Redundant immersed temperature probes (accuracy: ±0.5°C from -10°C to +85°C)</td>
+                            <td class="py-4 px-6 font-mono text-right text-slate-200">₹300</td>
+                            <td class="py-4 px-6 font-mono text-right text-slate-400">$3.80</td>
+                        </tr>
+                        <tr class="hover:bg-slate-800/30 transition">
+                            <td class="py-4 px-6 font-semibold text-white">Chamber Environment</td>
+                            <td class="py-4 px-6 font-mono text-cyan-300 text-xs">SHT31 / DHT22 (AM2302)</td>
+                            <td class="py-4 px-6 text-slate-400">Cold box cavity relative humidity and ambient baseline temperature</td>
+                            <td class="py-4 px-6 font-mono text-right text-slate-200">₹350</td>
+                            <td class="py-4 px-6 font-mono text-right text-slate-400">$4.30</td>
+                        </tr>
+                        <tr class="hover:bg-slate-800/30 transition">
+                            <td class="py-4 px-6 font-semibold text-white">Kinematics & Shock</td>
+                            <td class="py-4 px-6 font-mono text-cyan-300 text-xs">MPU-6050 (6-DOF IMU)</td>
+                            <td class="py-4 px-6 text-slate-400">Detects transit shocks (drops, potholes > 2.0g) and continuous RMS vibration</td>
+                            <td class="py-4 px-6 font-mono text-right text-slate-200">₹180</td>
+                            <td class="py-4 px-6 font-mono text-right text-slate-400">$2.20</td>
+                        </tr>
+                        <tr class="hover:bg-slate-800/30 transition">
+                            <td class="py-4 px-6 font-semibold text-white">Location & Speed</td>
+                            <td class="py-4 px-6 font-mono text-cyan-300 text-xs">NEO-6M / NEO-8M GPS Module</td>
+                            <td class="py-4 px-6 text-slate-400">Real-time coordinates, velocity tracking, ETA route estimation</td>
+                            <td class="py-4 px-6 font-mono text-right text-slate-200">₹600</td>
+                            <td class="py-4 px-6 font-mono text-right text-slate-400">$7.30</td>
+                        </tr>
+                        <tr class="hover:bg-slate-800/30 transition">
+                            <td class="py-4 px-6 font-semibold text-white">Tamper / Lid Sensor</td>
+                            <td class="py-4 px-6 font-mono text-cyan-300 text-xs">Magnetic Reed Switch & Magnet</td>
+                            <td class="py-4 px-6 text-slate-400">Monitors box lid opening events, air breaches, and unauthorized tampering</td>
+                            <td class="py-4 px-6 font-mono text-right text-slate-200">₹80</td>
+                            <td class="py-4 px-6 font-mono text-right text-slate-400">$1.00</td>
+                        </tr>
+                        <tr class="hover:bg-slate-800/30 transition">
+                            <td class="py-4 px-6 font-semibold text-white">Power Telemetry</td>
+                            <td class="py-4 px-6 font-mono text-cyan-300 text-xs">INA219 I2C Current/Voltage Sensor</td>
+                            <td class="py-4 px-6 text-slate-400">Real-time state of charge (SoC), power drain rate, and remaining runtime</td>
+                            <td class="py-4 px-6 font-mono text-right text-slate-200">₹200</td>
+                            <td class="py-4 px-6 font-mono text-right text-slate-400">$2.50</td>
+                        </tr>
+                        <tr class="hover:bg-slate-800/30 transition">
+                            <td class="py-4 px-6 font-semibold text-white">Active Cooling</td>
+                            <td class="py-4 px-6 font-mono text-cyan-300 text-xs">TEC1-12706 Peltier + Heatsink + Fans</td>
+                            <td class="py-4 px-6 text-slate-400">Thermoelectric cooling module to maintain chamber between 2°C and 8°C</td>
+                            <td class="py-4 px-6 font-mono text-right text-slate-200">₹1,100</td>
+                            <td class="py-4 px-6 font-mono text-right text-slate-400">$13.50</td>
+                        </tr>
+                        <tr class="hover:bg-slate-800/30 transition">
+                            <td class="py-4 px-6 font-semibold text-white">Actuation Driver</td>
+                            <td class="py-4 px-6 font-mono text-cyan-300 text-xs">IRF520 MOSFET / 10A Relay Module</td>
+                            <td class="py-4 px-6 text-slate-400">High-side PWM switching for Peltier module & fan speed control</td>
+                            <td class="py-4 px-6 font-mono text-right text-slate-200">₹120</td>
+                            <td class="py-4 px-6 font-mono text-right text-slate-400">$1.50</td>
+                        </tr>
+                        <tr class="hover:bg-slate-800/30 transition">
+                            <td class="py-4 px-6 font-semibold text-white">Cellular Telemetry</td>
+                            <td class="py-4 px-6 font-mono text-cyan-300 text-xs">A7672S / SIM7600 4G LTE Module</td>
+                            <td class="py-4 px-6 text-slate-400">Direct cloud uplink across highways without Wi-Fi dependence (4G VoLTE/data)</td>
+                            <td class="py-4 px-6 font-mono text-right text-slate-200">₹1,900</td>
+                            <td class="py-4 px-6 font-mono text-right text-slate-400">$23.00</td>
+                        </tr>
+                        <tr class="hover:bg-slate-800/30 transition">
+                            <td class="py-4 px-6 font-semibold text-white">Portable Power</td>
+                            <td class="py-4 px-6 font-mono text-cyan-300 text-xs">12V 3S Li-ion Battery (BMS) + Buck</td>
+                            <td class="py-4 px-6 text-slate-400">Independent 6-10 hour portable operation with 12V to 5V DC-DC step down</td>
+                            <td class="py-4 px-6 font-mono text-right text-slate-200">₹1,800</td>
+                            <td class="py-4 px-6 font-mono text-right text-slate-400">$22.00</td>
+                        </tr>
+                        <tr class="hover:bg-slate-800/30 transition">
+                            <td class="py-4 px-6 font-semibold text-white">Enclosure & Display</td>
+                            <td class="py-4 px-6 font-mono text-cyan-300 text-xs">0.96" I2C OLED, Hard Box, Wiring</td>
+                            <td class="py-4 px-6 text-slate-400">Local emergency status display on container lid, insulated chassis</td>
+                            <td class="py-4 px-6 font-mono text-right text-slate-200">₹700</td>
+                            <td class="py-4 px-6 font-mono text-right text-slate-400">$8.50</td>
+                        </tr>
+                    </tbody>
+                    <tfoot class="bg-slate-950 font-bold border-t-2 border-cyan-500/40 text-white">
+                        <tr>
+                            <td colspan="3" class="py-4 px-6 text-cyan-300 uppercase tracking-wider font-mono">Estimated Total Prototype Budget</td>
+                            <td class="py-4 px-6 font-mono text-right text-cyan-400 text-base">₹7,850</td>
+                            <td class="py-4 px-6 font-mono text-right text-cyan-400 text-base">~$95.00</td>
+                        </tr>
+                    </tfoot>
+                </table>
+            </div>
+            <div class="mt-4 text-xs text-slate-500 text-right">
+                *Prices reflect standard commercial off-the-shelf retail components in India. For school/lab prototypes without cellular SIM, costs drop to &lt;₹5,500 (~$65) using phone hotspot.
+            </div>
+        </div>
+    </section>
+
+    <!-- Dataset Acquisition & Synthesis Methodology -->
+    <section id="dataset" class="py-20 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div class="text-center max-w-3xl mx-auto mb-16">
+            <div class="text-xs font-bold text-cyan-400 uppercase tracking-widest">Data Engineering & Training</div>
+            <h2 class="text-3xl font-extrabold text-white tracking-tight mt-1">
+                Dataset Acquisition Strategy
+            </h2>
+            <p class="text-slate-400 mt-3 text-sm sm:text-base">
+                Real human organ transit logs are legally classified and unavailable in public repositories. We formulate a robust 3-tier hybrid data pipeline combining empirical physical trials and thermodynamic simulation.
+            </p>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
+            <!-- Tier 1 -->
+            <div class="glass-card p-6 rounded-2xl border border-slate-700/60 relative group hover:border-cyan-500/40 transition">
+                <div class="w-12 h-12 rounded-xl bg-cyan-950 border border-cyan-800/80 flex items-center justify-center text-cyan-400 font-bold text-lg mb-5">
+                    01
+                </div>
+                <h3 class="text-xl font-bold text-white mb-2">Hardware-in-the-Loop Logging</h3>
+                <p class="text-sm text-slate-400 leading-relaxed mb-4">
+                    Deploy the assembled prototype in simulated cold runs with thermal surrogates (gel ice packs, cold 0.9% saline bags, or biological tissue samples):
+                </p>
+                <ul class="text-xs text-slate-300 space-y-2 font-mono">
+                    <li class="flex items-start">
+                        <span class="text-cyan-400 mr-2">▶</span>
+                        <span><strong>Nominal Transit:</strong> Steady 2°C–6°C on highway ambulance trips.</span>
+                    </li>
+                    <li class="flex items-start">
+                        <span class="text-cyan-400 mr-2">▶</span>
+                        <span><strong>Thermal Failure:</strong> Peltier turned off in 38°C ambient room to log thermal decay curve.</span>
+                    </li>
+                    <li class="flex items-start">
+                        <span class="text-cyan-400 mr-2">▶</span>
+                        <span><strong>Handling Abuse:</strong> Potholes, drop tests, 5–45 second lid breaches.</span>
+                    </li>
+                </ul>
+            </div>
+
+            <!-- Tier 2 -->
+            <div class="glass-card p-6 rounded-2xl border border-slate-700/60 relative group hover:border-teal-500/40 transition">
+                <div class="w-12 h-12 rounded-xl bg-teal-950 border border-teal-800/80 flex items-center justify-center text-teal-400 font-bold text-lg mb-5">
+                    02
+                </div>
+                <h3 class="text-xl font-bold text-white mb-2">Thermodynamic Physics Simulator</h3>
+                <p class="text-sm text-slate-400 leading-relaxed mb-4">
+                    Generate 100,000+ synthetic transport trajectories in Python using Newton's cooling law and kinetic damage modeling:
+                </p>
+                <div class="p-3 rounded-lg bg-slate-950 font-mono text-xs text-slate-300 mb-3 overflow-x-auto">
+                    $$\frac{dT_{in}}{dt} = -k(T_{in} - T_{amb}) + Q_{cooling}$$
+                </div>
+                <p class="text-xs text-slate-400 leading-relaxed">
+                    Inject stochastic Gaussian vibration noise, Poisson-distributed road shocks ($g$-forces > 2.0g), and organ-specific decay constants to train ML classifiers.
+                </p>
+            </div>
+
+            <!-- Tier 3 -->
+            <div class="glass-card p-6 rounded-2xl border border-slate-700/60 relative group hover:border-sky-500/40 transition">
+                <div class="w-12 h-12 rounded-xl bg-sky-950 border border-sky-800/80 flex items-center justify-center text-sky-400 font-bold text-lg mb-5">
+                    03
+                </div>
+                <h3 class="text-xl font-bold text-white mb-2">Cold-Chain Logistics Datasets</h3>
+                <p class="text-sm text-slate-400 leading-relaxed mb-4">
+                    Transfer learning using verified open-access biomedical cold-chain repositories:
+                </p>
+                <ul class="text-xs text-slate-300 space-y-2 font-mono">
+                    <li class="flex items-start">
+                        <span class="text-sky-400 mr-2">▶</span>
+                        <span><strong>WHO PQS Vaccine Cold-Chain:</strong> Real 2°C–8°C time-out-of-refrigeration excursion data.</span>
+                    </li>
+                    <li class="flex items-start">
+                        <span class="text-sky-400 mr-2">▶</span>
+                        <span><strong>Kaggle Cold Supply Chain:</strong> Multi-sensor road transport vibration and GPS telemetry.</span>
+                    </li>
+                    <li class="flex items-start">
+                        <span class="text-sky-400 mr-2">▶</span>
+                        <span><strong>UNOS/ISHLT Literature:</strong> Clinical graft loss odds ratios indexed against Cold Ischemia Time (CIT).</span>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </section>
+
+    <!-- Transport Risk Index (TRI) Mathematical Model -->
+    <section id="tri-equation" class="py-20 bg-slate-900/50 border-y border-slate-800">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="text-center max-w-3xl mx-auto mb-16">
+                <div class="text-xs font-bold text-cyan-400 uppercase tracking-widest">Mathematical Formulation</div>
+                <h2 class="text-3xl font-extrabold text-white tracking-tight mt-1">
+                    Transport Risk Index (TRI) Model
+                </h2>
+                <p class="text-slate-400 mt-3 text-sm sm:text-base">
+                    The TRI is an objective index $TRI \in [0, 100]$ synthesizing thermal degradation, organ-specific ischemic limits, kinematic shocks, and box hermetic integrity into a single predictive score.
+                </p>
+            </div>
+
+            <!-- Master Formula Card -->
+            <div class="glass-card p-8 rounded-2xl border border-cyan-500/30 max-w-4xl mx-auto glow-cyan mb-12">
+                <div class="text-xs uppercase font-mono tracking-wider text-cyan-400 mb-2 font-semibold">Composite Master Equation</div>
+                <div class="text-xl sm:text-2xl font-mono text-white text-center py-4 overflow-x-auto">
+                    $$TRI(t) = \min\Big(100, \; w_1 S_{temp}(t) + w_2 S_{time}(t) + w_3 S_{shock}(t) + w_4 S_{lid}(t)\Big)$$
+                </div>
+                <div class="grid grid-cols-2 sm:grid-cols-4 gap-4 mt-6 text-center text-xs font-mono border-t border-slate-800 pt-6">
+                    <div class="p-2 rounded bg-slate-950/60"><span class="text-cyan-400 font-bold">w₁ = 0.40</span><br><span class="text-slate-400">Thermal Weight</span></div>
+                    <div class="p-2 rounded bg-slate-950/60"><span class="text-teal-400 font-bold">w₂ = 0.30</span><br><span class="text-slate-400">Ischemia Time Weight</span></div>
+                    <div class="p-2 rounded bg-slate-950/60"><span class="text-sky-400 font-bold">w₃ = 0.15</span><br><span class="text-slate-400">Kinematic Shock</span></div>
+                    <div class="p-2 rounded bg-slate-950/60"><span class="text-indigo-400 font-bold">w₄ = 0.15</span><br><span class="text-slate-400">Lid Breach / Tamper</span></div>
+                </div>
+            </div>
+
+            <!-- Detailed Sub-Equations -->
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-8 max-w-5xl mx-auto">
+                <!-- 1. Thermal Penalty -->
+                <div class="glass-card p-6 rounded-xl border border-slate-800">
+                    <div class="flex items-center justify-between mb-3">
+                        <h4 class="font-bold text-white text-base">1. Thermal Degradation Penalty</h4>
+                        <span class="text-xs font-mono text-cyan-400 bg-cyan-950 px-2 py-0.5 rounded">S_temp(t)</span>
+                    </div>
+                    <p class="text-xs text-slate-400 mb-4 leading-relaxed">
+                        Combines instantaneous excursion penalty with cumulative degree-minute thermal debt above optimal storage ($4^\circ\text{C}$):
+                    </p>
+                    <div class="bg-slate-950 p-4 rounded-lg font-mono text-xs text-slate-200 overflow-x-auto mb-3">
+                        $$\Delta T(t) = \begin{cases} 
+                        100, & T(t) \le 0^\circ\text{C} \quad \text{(Frostbite/Crystal)} \\
+                        0, & 2^\circ\text{C} \le T(t) \le 6^\circ\text{C} \quad \text{(Optimal)} \\
+                        \left(\frac{T(t) - 6}{2}\right) \cdot 40, & 6^\circ\text{C} < T(t) \le 8^\circ\text{C} \\
+                        40 + 60\left(1 - e^{-0.4(T(t)-8)}\right), & T(t) > 8^\circ\text{C} \quad \text{(Warm Ischemia)}
+                        \end{cases}$$
+                    </div>
+                    <div class="bg-slate-950/60 p-3 rounded-lg font-mono text-xs text-slate-400 overflow-x-auto">
+                        $$S_{temp}(t) = 0.70 \cdot \Delta T(t) + 0.30 \cdot \min\left(100, \; \lambda \int_0^t \max(0, T(\tau)-6)\,d\tau\right)$$
+                    </div>
+                </div>
+
+                <!-- 2. Cold Ischemia Time -->
+                <div class="glass-card p-6 rounded-xl border border-slate-800">
+                    <div class="flex items-center justify-between mb-3">
+                        <h4 class="font-bold text-white text-base">2. Cold Ischemia Exhaustion</h4>
+                        <span class="text-xs font-mono text-teal-400 bg-teal-950 px-2 py-0.5 rounded">S_time(t)</span>
+                    </div>
+                    <p class="text-xs text-slate-400 mb-4 leading-relaxed">
+                        Non-linear quadratic penalty representing ATP breakdown relative to organ maximum safe preservation ceiling ($CIT_{max}$):
+                    </p>
+                    <div class="bg-slate-950 p-4 rounded-lg font-mono text-xs text-slate-200 overflow-x-auto mb-3">
+                        $$S_{time}(t) = 100 \times \left( \frac{t_{elapsed}}{CIT_{max}} \right)^2$$
+                    </div>
+                    <div class="p-3 bg-slate-950/60 rounded-lg text-xs font-mono text-slate-400 space-y-1">
+                        <div>• Heart / Lung: <span class="text-teal-300 font-bold">CIT_max = 6 hours</span></div>
+                        <div>• Liver: <span class="text-teal-300 font-bold">CIT_max = 12 hours</span></div>
+                        <div>• Kidney: <span class="text-teal-300 font-bold">CIT_max = 30 hours</span></div>
+                    </div>
+                </div>
+
+                <!-- 3. Mechanical Shock -->
+                <div class="glass-card p-6 rounded-xl border border-slate-800">
+                    <div class="flex items-center justify-between mb-3">
+                        <h4 class="font-bold text-white text-base">3. Mechanical Shock & Vibration</h4>
+                        <span class="text-xs font-mono text-sky-400 bg-sky-950 px-2 py-0.5 rounded">S_shock(t)</span>
+                    </div>
+                    <p class="text-xs text-slate-400 mb-4 leading-relaxed">
+                        Detects peak $g$-forces above tolerance ($g_{thresh} = 2.0g$) that cause micro-vascular tearing, alongside continuous RMS road vibration:
+                    </p>
+                    <div class="bg-slate-950 p-4 rounded-lg font-mono text-xs text-slate-200 overflow-x-auto mb-3">
+                        $$S_{shock}(t) = \min\left(100, \; \mu \sum_{k=1}^{K} \max(0, g_k - 2.0)^2 + \nu \cdot \text{RMS}_{vib}\right)$$
+                    </div>
+                    <div class="text-xs text-slate-400">
+                        Where $g_k = \frac{\sqrt{a_x^2 + a_y^2 + a_z^2}}{9.81\text{ m/s}^2}$.
+                    </div>
+                </div>
+
+                <!-- 4. Lid Violation -->
+                <div class="glass-card p-6 rounded-xl border border-slate-800">
+                    <div class="flex items-center justify-between mb-3">
+                        <h4 class="font-bold text-white text-base">4. Lid Tamper & Contamination</h4>
+                        <span class="text-xs font-mono text-indigo-400 bg-indigo-950 px-2 py-0.5 rounded">S_lid(t)</span>
+                    </div>
+                    <p class="text-xs text-slate-400 mb-4 leading-relaxed">
+                        Penalizes chamber exposure to ambient pathogens and convective thermal heat rush:
+                    </p>
+                    <div class="bg-slate-950 p-4 rounded-lg font-mono text-xs text-slate-200 overflow-x-auto mb-3">
+                        $$S_{lid}(t) = \min\Big(100, \; 30 \cdot N_{open} + 0.5 \cdot t_{open\_seconds}\Big)$$
+                    </div>
+                    <div class="text-xs text-slate-400">
+                        Each unauthorized opening imposes an immediate 30-point base penalty plus continuous penalty for open exposure.
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Interactive TRI Risk Simulator -->
+    <section id="simulator" class="py-20 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div class="text-center max-w-3xl mx-auto mb-12">
+            <div class="text-xs font-bold text-cyan-400 uppercase tracking-widest">Interactive Demonstration</div>
+            <h2 class="text-3xl font-extrabold text-white tracking-tight mt-1">
+                Live Transport Risk Index (TRI) Simulator
+            </h2>
+            <p class="text-slate-400 mt-3 text-sm sm:text-base">
+                Adjust the telemetry parameters below in real-time to observe how the mathematical formula dynamically updates the TRI score and clinical risk tier.
+            </p>
+        </div>
+
+        <div class="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
+            <!-- Controls Form -->
+            <div class="lg:col-span-6 glass-card p-6 sm:p-8 rounded-2xl border border-slate-800 space-y-6">
+                <!-- Organ Selector -->
+                <div>
+                    <label class="block text-xs font-semibold uppercase tracking-wider text-slate-300 mb-2">Target Donated Organ</label>
+                    <div class="grid grid-cols-3 gap-2">
+                        <button type="button" onclick="setOrgan('heart', 6)" class="organ-btn active px-3 py-2 text-xs font-bold rounded-lg border border-cyan-500 bg-cyan-950 text-cyan-300 transition">
+                            Heart / Lung (6h)
+                        </button>
+                        <button type="button" onclick="setOrgan('liver', 12)" class="organ-btn px-3 py-2 text-xs font-bold rounded-lg border border-slate-700 bg-slate-900 text-slate-400 hover:border-slate-600 transition">
+                            Liver (12h)
+                        </button>
+                        <button type="button" onclick="setOrgan('kidney', 30)" class="organ-btn px-3 py-2 text-xs font-bold rounded-lg border border-slate-700 bg-slate-900 text-slate-400 hover:border-slate-600 transition">
+                            Kidney (30h)
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Temperature Slider -->
+                <div>
+                    <div class="flex justify-between items-center mb-1">
+                        <label class="text-xs font-semibold uppercase tracking-wider text-slate-300">Internal Box Temperature</label>
+                        <span id="tempVal" class="text-sm font-mono font-bold text-cyan-400">4.0 °C</span>
+                    </div>
+                    <input type="range" id="tempInput" min="-2" max="18" step="0.5" value="4.0" class="w-full accent-cyan-400 cursor-pointer" oninput="updateSimulation()">
+                    <div class="flex justify-between text-[10px] font-mono text-slate-500 mt-1">
+                        <span class="text-red-400">-2°C (Freezing Danger)</span>
+                        <span class="text-teal-400">4°C (Optimum)</span>
+                        <span class="text-amber-400">8°C (Limit)</span>
+                        <span class="text-red-400">18°C (Decay)</span>
+                    </div>
+                </div>
+
+                <!-- Elapsed Transit Time Slider -->
+                <div>
+                    <div class="flex justify-between items-center mb-1">
+                        <label class="text-xs font-semibold uppercase tracking-wider text-slate-300">Elapsed Transit Time</label>
+                        <span id="timeVal" class="text-sm font-mono font-bold text-teal-400">1.5 Hours</span>
+                    </div>
+                    <input type="range" id="timeInput" min="0" max="30" step="0.5" value="1.5" class="w-full accent-teal-400 cursor-pointer" oninput="updateSimulation()">
+                    <div class="flex justify-between text-[10px] font-mono text-slate-500 mt-1">
+                        <span>0h (Harvest)</span>
+                        <span id="maxCitDisplay">6h (CIT Max)</span>
+                    </div>
+                </div>
+
+                <!-- Shock Impulses Slider -->
+                <div>
+                    <div class="flex justify-between items-center mb-1">
+                        <label class="text-xs font-semibold uppercase tracking-wider text-slate-300">Shock Events (> 2.0g)</label>
+                        <span id="shockVal" class="text-sm font-mono font-bold text-sky-400">0 Events</span>
+                    </div>
+                    <input type="range" id="shockInput" min="0" max="8" step="1" value="0" class="w-full accent-sky-400 cursor-pointer" oninput="updateSimulation()">
+                    <div class="flex justify-between text-[10px] font-mono text-slate-500 mt-1">
+                        <span>0 (Smooth Highway)</span>
+                        <span>4 (Potholes/Rough Road)</span>
+                        <span>8 (Severe Impacts)</span>
+                    </div>
+                </div>
+
+                <!-- Lid Opening Slider -->
+                <div>
+                    <div class="flex justify-between items-center mb-1">
+                        <label class="text-xs font-semibold uppercase tracking-wider text-slate-300">Lid Open Breaches</label>
+                        <span id="lidVal" class="text-sm font-mono font-bold text-indigo-400">0 times (0s)</span>
+                    </div>
+                    <input type="range" id="lidInput" min="0" max="5" step="1" value="0" class="w-full accent-indigo-400 cursor-pointer" oninput="updateSimulation()">
+                    <div class="flex justify-between text-[10px] font-mono text-slate-500 mt-1">
+                        <span>0 (Hermetic Seal)</span>
+                        <span>2 (Inspect / Check)</span>
+                        <span>5 (Severe Compromise)</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Risk Gauge & Live Telemetry Breakdown -->
+            <div class="lg:col-span-6 glass-card p-6 sm:p-8 rounded-2xl border border-slate-800 space-y-6">
+                <div class="flex items-center justify-between">
+                    <span class="text-xs uppercase font-mono font-bold tracking-wider text-slate-400">Calculated Transport Risk Index</span>
+                    <span id="triBadge" class="px-2.5 py-1 rounded-full text-xs font-mono font-bold bg-emerald-950 text-emerald-400 border border-emerald-800/60">
+                        OPTIMAL TRANSIT
+                    </span>
+                </div>
+
+                <!-- Big Score Gauge -->
+                <div class="flex items-center space-x-6">
+                    <div class="relative w-32 h-32 flex-shrink-0 flex items-center justify-center">
+                        <svg class="w-full h-full transform -rotate-90" viewBox="0 0 36 36">
+                            <path class="text-slate-800" stroke-width="3.5" stroke="currentColor" fill="none"
+                                  d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" />
+                            <path id="gaugePath" class="text-cyan-400 transition-all duration-300 ease-out" stroke-dasharray="0, 100" stroke-width="3.5" stroke-linecap="round" stroke="currentColor" fill="none"
+                                  d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" />
+                        </svg>
+                        <div class="absolute inset-0 flex flex-col items-center justify-center">
+                            <span id="triScoreText" class="text-3xl font-black font-mono text-white">0</span>
+                            <span class="text-[9px] uppercase font-mono text-slate-400">TRI Score</span>
+                        </div>
+                    </div>
+                    <div class="space-y-1">
+                        <div id="statusTitle" class="text-xl font-bold text-white">Organ Safe for Grafting</div>
+                        <p id="statusDesc" class="text-xs text-slate-400 leading-relaxed">
+                            Temperature and duration are strictly within optimal preservation parameters. No critical handling stress detected.
+                        </p>
+                    </div>
+                </div>
+
+                <!-- Sub-score Breakdown Bars -->
+                <div class="space-y-3 pt-4 border-t border-slate-800 font-mono text-xs">
+                    <div>
+                        <div class="flex justify-between text-slate-300 mb-1">
+                            <span>Thermal Deviation ($S_{temp}$ × 40%)</span>
+                            <span id="tempScoreText" class="text-cyan-400">0.0 / 40.0</span>
+                        </div>
+                        <div class="w-full bg-slate-900 rounded-full h-2">
+                            <div id="tempBar" class="bg-cyan-400 h-2 rounded-full transition-all duration-300" style="width: 0%"></div>
+                        </div>
+                    </div>
+                    <div>
+                        <div class="flex justify-between text-slate-300 mb-1">
+                            <span>Ischemia Time Decay ($S_{time}$ × 30%)</span>
+                            <span id="timeScoreText" class="text-teal-400">1.9 / 30.0</span>
+                        </div>
+                        <div class="w-full bg-slate-900 rounded-full h-2">
+                            <div id="timeBar" class="bg-teal-400 h-2 rounded-full transition-all duration-300" style="width: 6%"></div>
+                        </div>
+                    </div>
+                    <div>
+                        <div class="flex justify-between text-slate-300 mb-1">
+                            <span>Mechanical Shock ($S_{shock}$ × 15%)</span>
+                            <span id="shockScoreText" class="text-sky-400">0.0 / 15.0</span>
+                        </div>
+                        <div class="w-full bg-slate-900 rounded-full h-2">
+                            <div id="shockBar" class="bg-sky-400 h-2 rounded-full transition-all duration-300" style="width: 0%"></div>
+                        </div>
+                    </div>
+                    <div>
+                        <div class="flex justify-between text-slate-300 mb-1">
+                            <span>Lid Breach ($S_{lid}$ × 15%)</span>
+                            <span id="lidScoreText" class="text-indigo-400">0.0 / 15.0</span>
+                        </div>
+                        <div class="w-full bg-slate-900 rounded-full h-2">
+                            <div id="lidBar" class="bg-indigo-400 h-2 rounded-full transition-all duration-300" style="width: 0%"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Simulated Live Telemetry Chart -->
+                <div class="pt-4 border-t border-slate-800">
+                    <span class="text-xs uppercase font-mono font-bold tracking-wider text-slate-400 block mb-2">Simulated Trip Trajectory</span>
+                    <div class="h-44 w-full">
+                        <canvas id="triChart"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- GitHub Pages Setup & CLI Instructions -->
+    <section class="py-20 bg-slate-900/60 border-t border-slate-800">
+        <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="text-center mb-10">
+                <div class="text-xs font-bold text-cyan-400 uppercase tracking-widest">Deployment Guide</div>
+                <h2 class="text-3xl font-extrabold text-white tracking-tight mt-1">
+                    How to Host on GitHub Pages
+                </h2>
+                <p class="text-slate-400 mt-2 text-sm">
+                    Follow these step-by-step commands to push this codebase to your repository <code class="text-cyan-300 font-mono">ORBITA_Methodology</code>.
+                </p>
+            </div>
+
+            <!-- Terminal block -->
+            <div class="glass-card rounded-2xl border border-slate-700/80 overflow-hidden shadow-2xl">
+                <div class="bg-slate-950 px-4 py-3 flex items-center justify-between border-b border-slate-800">
+                    <div class="flex items-center space-x-2">
+                        <div class="w-3 h-3 rounded-full bg-red-500/80"></div>
+                        <div class="w-3 h-3 rounded-full bg-yellow-500/80"></div>
+                        <div class="w-3 h-3 rounded-full bg-green-500/80"></div>
+                        <span class="ml-2 text-xs font-mono text-slate-400">bash / powershell</span>
+                    </div>
+                    <span class="text-xs font-mono text-cyan-400">Target: aaron0745/ORBITA_Methodology</span>
+                </div>
+                <div class="p-6 font-mono text-xs sm:text-sm text-slate-200 space-y-4 overflow-x-auto">
+                    <div>
+                        <span class="text-slate-500"># 1. Navigate to the project directory</span><br>
+                        <span class="text-cyan-400">cd</span> C:\Users\bobby\ORBITA_Methodology
+                    </div>
+                    <div>
+                        <span class="text-slate-500"># 2. Initialize git and configure the remote</span><br>
+                        <span class="text-cyan-400">git</span> init<br>
+                        <span class="text-cyan-400">git</span> remote add origin https://github.com/aaron0745/ORBITA_Methodology.git
+                    </div>
+                    <div>
+                        <span class="text-slate-500"># 3. Stage and commit the web files</span><br>
+                        <span class="text-cyan-400">git</span> add .<br>
+                        <span class="text-cyan-400">git</span> commit -m <span class="text-emerald-300">"Add ORBITA AI organ transport methodology webpage and TRI simulator"</span>
+                    </div>
+                    <div>
+                        <span class="text-slate-500"># 4. Push to main branch</span><br>
+                        <span class="text-cyan-400">git</span> branch -M main<br>
+                        <span class="text-cyan-400">git</span> push -u origin main
+                    </div>
+                </div>
+            </div>
+
+            <!-- GitHub Pages Activation Steps -->
+            <div class="mt-8 p-6 rounded-2xl bg-cyan-950/40 border border-cyan-800/50">
+                <h4 class="text-base font-bold text-cyan-300 mb-2 flex items-center">
+                    <svg class="w-5 h-5 mr-2 text-cyan-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                    Enabling GitHub Pages in Your Repo:
+                </h4>
+                <ol class="list-decimal pl-5 text-xs sm:text-sm text-slate-300 space-y-1.5">
+                    <li>Go to your GitHub repository: <a href="https://github.com/aaron0745/ORBITA_Methodology/settings/pages" target="_blank" class="text-cyan-400 underline font-mono">github.com/aaron0745/ORBITA_Methodology/settings/pages</a></li>
+                    <li>Under <strong>"Build and deployment"</strong> &gt; <strong>"Source"</strong>, select <span class="font-bold text-white">Deploy from a branch</span>.</li>
+                    <li>Under <strong>Branch</strong>, choose <span class="font-bold text-cyan-300">main</span> and folder <span class="font-bold text-cyan-300">/ (root)</span>, then click <strong>Save</strong>.</li>
+                    <li>Your live website will be accessible within 1–2 minutes at: <br><a href="https://aaron0745.github.io/ORBITA_Methodology/" target="_blank" class="text-teal-300 font-mono font-bold underline">https://aaron0745.github.io/ORBITA_Methodology/</a></li>
+                </ol>
+            </div>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="py-10 border-t border-slate-800 text-center text-xs text-slate-500 font-mono">
+        <p>ORBITA | AI-Enabled Smart Organ Transport System Prototype</p>
+        <p class="mt-1">Designed for ESP32 Microcontrollers • FreeRTOS • IoT Cloud Telemetry</p>
+    </footer>
+
+    <!-- Interactive Simulator JavaScript -->
+    <script>
+        let currentCITMax = 6;
+        let selectedOrgan = 'heart';
+        let triChart = null;
+
+        function setOrgan(type, citMax) {
+            selectedOrgan = type;
+            currentCITMax = citMax;
+            
+            document.querySelectorAll('.organ-btn').forEach(btn => {
+                btn.classList.remove('active', 'border-cyan-500', 'bg-cyan-950', 'text-cyan-300');
+                btn.classList.add('border-slate-700', 'bg-slate-900', 'text-slate-400');
+            });
+            event.target.classList.add('active', 'border-cyan-500', 'bg-cyan-950', 'text-cyan-300');
+            event.target.classList.remove('border-slate-700', 'bg-slate-900', 'text-slate-400');
+
+            document.getElementById('maxCitDisplay').innerText = `${citMax}h (CIT Max)`;
+            document.getElementById('timeInput').max = citMax * 1.3;
+            updateSimulation();
+        }
+
+        function calculateTRI(temp, time, shocks, lids, citMax) {
+            // 1. Thermal Penalty (0 - 100)
+            let s_temp = 0;
+            if (temp <= 0) {
+                s_temp = 100; // Freezing damage
+            } else if (temp >= 2 && temp <= 6) {
+                s_temp = 0; // Ideal window
+            } else if (temp > 6 && temp <= 8) {
+                s_temp = ((temp - 6) / 2) * 40;
+            } else if (temp > 8) {
+                s_temp = 40 + 60 * (1 - Math.exp(-0.4 * (temp - 8)));
+            } else {
+                // 0 < temp < 2
+                s_temp = ((2 - temp) / 2) * 35;
+            }
+
+            // 2. Time Penalty (0 - 100)
+            let s_time = 100 * Math.pow(Math.min(time / citMax, 1.4), 2);
+            s_time = Math.min(100, s_time);
+
+            // 3. Shock Penalty (0 - 100)
+            let s_shock = Math.min(100, shocks * 18);
+
+            // 4. Lid Penalty (0 - 100)
+            let s_lid = Math.min(100, lids * 25);
+
+            // Weighted composite
+            let tri = (0.40 * s_temp) + (0.30 * s_time) + (0.15 * s_shock) + (0.15 * s_lid);
+            tri = Math.min(100, Math.max(0, tri));
+
+            return {
+                tri: Math.round(tri * 10) / 10,
+                s_temp: Math.round(s_temp * 10) / 10,
+                s_time: Math.round(s_time * 10) / 10,
+                s_shock: Math.round(s_shock * 10) / 10,
+                s_lid: Math.round(s_lid * 10) / 10
+            };
+        }
+
+        function updateSimulation() {
+            const temp = parseFloat(document.getElementById('tempInput').value);
+            const time = parseFloat(document.getElementById('timeInput').value);
+            const shocks = parseInt(document.getElementById('shockInput').value);
+            const lids = parseInt(document.getElementById('lidInput').value);
+
+            // Update label readings
+            document.getElementById('tempVal').innerText = `${temp.toFixed(1)} °C`;
+            document.getElementById('timeVal').innerText = `${time.toFixed(1)} Hours`;
+            document.getElementById('shockVal').innerText = `${shocks} Events`;
+            document.getElementById('lidVal').innerText = `${lids} times (${lids * 15}s)`;
+
+            const res = calculateTRI(temp, time, shocks, lids, currentCITMax);
+
+            // Update Score & Gauge
+            document.getElementById('triScoreText').innerText = res.tri.toFixed(0);
+            const gaugePath = document.getElementById('gaugePath');
+            gaugePath.setAttribute('stroke-dasharray', `${res.tri}, 100`);
+
+            // Update Progress Bars
+            const weightedTemp = res.s_temp * 0.40;
+            const weightedTime = res.s_time * 0.30;
+            const weightedShock = res.s_shock * 0.15;
+            const weightedLid = res.s_lid * 0.15;
+
+            document.getElementById('tempScoreText').innerText = `${weightedTemp.toFixed(1)} / 40.0`;
+            document.getElementById('tempBar').style.width = `${(weightedTemp / 40) * 100}%`;
+
+            document.getElementById('timeScoreText').innerText = `${weightedTime.toFixed(1)} / 30.0`;
+            document.getElementById('timeBar').style.width = `${(weightedTime / 30) * 100}%`;
+
+            document.getElementById('shockScoreText').innerText = `${weightedShock.toFixed(1)} / 15.0`;
+            document.getElementById('shockBar').style.width = `${(weightedShock / 15) * 100}%`;
+
+            document.getElementById('lidScoreText').innerText = `${weightedLid.toFixed(1)} / 15.0`;
+            document.getElementById('lidBar').style.width = `${(weightedLid / 15) * 100}%`;
+
+            // Status Badge and Message
+            const badge = document.getElementById('triBadge');
+            const title = document.getElementById('statusTitle');
+            const desc = document.getElementById('statusDesc');
+
+            if (res.tri < 25) {
+                gaugePath.className.baseVal = "text-emerald-400 transition-all duration-300 ease-out";
+                badge.className = "px-2.5 py-1 rounded-full text-xs font-mono font-bold bg-emerald-950 text-emerald-400 border border-emerald-800/60";
+                badge.innerText = "OPTIMAL TRANSIT";
+                title.innerText = "Organ Safe for Grafting";
+                title.className = "text-xl font-bold text-emerald-400";
+                desc.innerText = "Preservation variables well within cold ischemia tolerance. Cellular integrity preserved.";
+            } else if (res.tri < 50) {
+                gaugePath.className.baseVal = "text-yellow-400 transition-all duration-300 ease-out";
+                badge.className = "px-2.5 py-1 rounded-full text-xs font-mono font-bold bg-yellow-950 text-yellow-400 border border-yellow-800/60";
+                badge.innerText = "GUARDED RISK";
+                title.innerText = "Mild Environmental Stress";
+                title.className = "text-xl font-bold text-yellow-400";
+                desc.innerText = "Moderate parameter deviation detected. Check active Peltier regulation and minimize remaining transit delays.";
+            } else if (res.tri < 75) {
+                gaugePath.className.baseVal = "text-amber-500 transition-all duration-300 ease-out";
+                badge.className = "px-2.5 py-1 rounded-full text-xs font-mono font-bold bg-amber-950 text-amber-400 border border-amber-800/60";
+                badge.innerText = "ELEVATED RISK";
+                title.innerText = "Urgent Intervention Advised";
+                title.className = "text-xl font-bold text-amber-400";
+                desc.innerText = "Prolonged exposure or thermal breach. Accelerated cellular ATP depletion in progress. Alert recipient surgical team.";
+            } else {
+                gaugePath.className.baseVal = "text-red-500 transition-all duration-300 ease-out";
+                badge.className = "px-2.5 py-1 rounded-full text-xs font-mono font-bold bg-red-950 text-red-400 border border-red-800/60";
+                badge.innerText = "CRITICAL NON-VIABLE";
+                title.innerText = "Severe Ischemic Damage";
+                title.className = "text-xl font-bold text-red-400";
+                desc.innerText = "Critical risk threshold breached. High probability of primary graft dysfunction (PGD) or non-viability upon reperfusion.";
+            }
+
+            updateChart(temp, currentCITMax);
+        }
+
+        function initChart() {
+            const ctx = document.getElementById('triChart').getContext('2d');
+            triChart = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: ['0h', '1h', '2h', '3h', '4h', '5h', '6h'],
+                    datasets: [
+                        {
+                            label: 'Projected TRI Risk',
+                            data: [5, 12, 18, 25, 34, 48, 65],
+                            borderColor: '#22d3ee',
+                            backgroundColor: 'rgba(34, 211, 238, 0.1)',
+                            borderWidth: 2,
+                            fill: true,
+                            tension: 0.3
+                        },
+                        {
+                            label: 'Safe Threshold (TRI 50)',
+                            data: [50, 50, 50, 50, 50, 50, 50],
+                            borderColor: '#ef4444',
+                            borderDash: [5, 5],
+                            borderWidth: 1.5,
+                            pointRadius: 0,
+                            fill: false
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            labels: {
+                                color: '#94a3b8',
+                                font: { size: 10 }
+                            }
+                        }
+                    },
+                    scales: {
+                        x: {
+                            grid: { color: 'rgba(148, 163, 184, 0.1)' },
+                            ticks: { color: '#64748b', font: { size: 10 } }
+                        },
+                        y: {
+                            min: 0,
+                            max: 100,
+                            grid: { color: 'rgba(148, 163, 184, 0.1)' },
+                            ticks: { color: '#64748b', font: { size: 10 } }
+                        }
+                    }
+                }
+            });
+        }
+
+        function updateChart(currentTemp, citMax) {
+            if (!triChart) return;
+            const steps = 7;
+            const labels = [];
+            const triData = [];
+            const threshData = [];
+
+            for (let i = 0; i <= steps; i++) {
+                const t = (citMax / steps) * i;
+                labels.push(`${t.toFixed(1)}h`);
+                const simulated = calculateTRI(currentTemp, t, 0, 0, citMax);
+                triData.push(simulated.tri);
+                threshData.push(50);
+            }
+
+            triChart.data.labels = labels;
+            triChart.data.datasets[0].data = triData;
+            triChart.data.datasets[1].data = threshData;
+            triChart.update('none');
+        }
+
+        window.addEventListener('DOMContentLoaded', () => {
+            initChart();
+            updateSimulation();
+        });
+    </script>
+</body>
+</html>
